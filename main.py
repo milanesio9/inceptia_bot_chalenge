@@ -42,7 +42,7 @@ class GeoAPI:
             req = requests.get(url=url)
             
             if req.status_code >= 400:
-                raise Exception(req.text)
+                return False
             
             data = req.json()
 
@@ -51,8 +51,9 @@ class GeoAPI:
             result = is_temperature_greater_than_twenty_eight(
                 temperature=temperature
             )
-            print(data)
-            print(result)
+            
+            return result
+            
         except requests.exceptions.RequestException:
             return False
 GeoAPI.is_hot_in_pehuajo()
