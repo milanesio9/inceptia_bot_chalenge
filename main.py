@@ -50,7 +50,6 @@ def charge_product_name_and_quantity():
     :return False `bool`si is_product_available retorna False:
     :return True `bool`si is_product_available retorna True:
     """
-
     product_name = input('\nIngrese el nombre del producto: ')
 
     quantity = int(input("Ingrese cantidad: "))
@@ -65,7 +64,7 @@ def charge_product_name_and_quantity():
     if results:
         print("\nSe encontro Stock del producto: ", product_name)
     else:
-        pass
+        charge_product_name_and_quantity()
     
 
 # Ejercicio 1:
@@ -133,7 +132,7 @@ def is_product_available(product_name, quantity):
 
     if not search.empty:
         real_quantity = search.iloc[0]
-        if real_quantity >= 0 and quantity <= real_quantity and quantity >= 0 and not quantity > real_quantity:
+        if real_quantity >= 0 and quantity <= real_quantity and quantity > 0 and not quantity > real_quantity:
             return True
         else:
             return False
