@@ -34,7 +34,7 @@ def is_temperature_greater_than_twenty_eight(
     temperature: float
 ) -> bool:
     '''
-    Funcion encargada de verificar si la temperatura pasado por parametro es mayor
+    Funcion encargada de verificar si la temperatura pasada por parametro es mayor
     a 28°C
 
     :param temperature `float`: Temperatura en grados Celcius.
@@ -51,11 +51,16 @@ def is_temperature_greater_than_twenty_eight(
 def charge_discount_code(
     product_name: str,
     quantity: int
-) -> bool:
+):
     """
     Funcion encargada de recibir el discount_code para poder validarlo
     """
-    discount_code = input('\nIngrese el código de descuento: ')
+    while True:
+        discount_code = input('\nIngrese el código de descuento: ')
+        if len(discount_code) >= 4 and discount_code.isalnum():
+            break
+        else:
+            print("Por favor, ingrese más de 4 caracteres alfanuméricos.")
 
     print(f'\nValidando código: {discount_code} ingresado')
 
@@ -71,6 +76,9 @@ def charge_discount_code(
     )
     
     if validate_discount:
+        print('Codigo validado correctamente\n')
+        time.sleep(1)
+
         print(f'\nConfirmando el pedido del producto: {product_name} cantidad: {quantity}\n')
 
         loading_bar(
@@ -83,7 +91,7 @@ def charge_discount_code(
         print(f'Pedido numero: {random.randint(0, 10000)} confirmado con exito!')
      
     else:
-        print(f"Codigo de descuento: {discount_code} no es valido\n")
+        print(f"Codigo de descuento: {discount_code} no es valido")
 
         charge_discount_code(
             product_name=product_name,
@@ -91,46 +99,92 @@ def charge_discount_code(
         )
   
 
-def charge_product_name_and_quantity():
+def charge_product_name_and_quantity(
+    tried: int=3
+):
     """
-    Funcion encargada de pedir el nombre y la cantidad del producto
-    asi como pasarle los parametro product_name y quantity a la funcion
-    is_product_available()
+    Funcion encargada de pedir el nombre, la cantidad del producto
+    y enviarle los parametro product_name y quantity a la funcion
+    is_product_available() y charge_discount_code()
     """
-    product_name = input('\nIngrese el nombre del producto: ')
+    while (tried <= 3 and tried != 0) or (tried <= 3 and tried != 0):
 
-    quantity = int(input("Ingrese cantidad: "))
+        print("\nIntentos de pedido:", tried)
 
-    print(f"\nBuscando producto: {product_name} cantidad: {quantity}")
+        tried -= 1
 
-    loading_bar(
-        total_time=2,
-        interval=0.1,
-        current_time=0,
-        clear=True
-    )
+        product_name = input('\nIngrese el nombre del sabor: ')
 
-    time.sleep(1)
+        while True:
+            quantity_input = input("Ingrese cantidad: ")
+            try:
+                quantity = int(quantity_input)
+                break
+            except ValueError:
+                print("\nPor favor, ingrese caracteres numericos (Ej: 1, 2, 3, 4...)\n")
 
-    get_product_name_and_quantity_from_df()
+        print(f"\nBuscando sabor: {product_name} cantidad: {quantity}")
 
-    results = is_product_available(
-        product_name=product_name,
-        quantity=quantity
-    )
+        loading_bar(
+            total_time=2,
+            interval=0.1,
+            current_time=0,
+            clear=True
+        )
 
-    if results:
-        print("\nSe encontro Stock del producto:",  product_name)
+        time.sleep(1)
 
-        charge_discount_code(
+        get_product_name_and_quantity_from_df()
+
+        results = is_product_available(
             product_name=product_name,
             quantity=quantity
-        ) 
+        )
+
+        if results:
+            print("\nSe encontro Stock solicitado del sabor:",  product_name)
+
+            charge_discount_code(
+                product_name=product_name.lower(),
+                quantity=quantity
+            ) 
+            break
+        else:
+            print("\nNo se encontro stock solicitado del sabor:",  product_name)
 
     else:
-        print("\nNo se encontro stock del producto:",  product_name)
+        os.system('clear')
 
-        charge_product_name_and_quantity()
+        print(f"\nDemasiados Intentos de busqueda...")
+
+        print(f"\nSabores los cuales poseen stock:\n")
+
+        get_product_name_and_quantity_from_df()
+
+        print(f"\nDesea Continuar? [Y/N]\n")
+
+        answer = str(input())
+
+        if answer.lower() == 'y':
+
+            loading_bar(
+                total_time=2,
+                interval=0.1,
+                current_time=0,
+                clear=True
+            )
+
+            get_product_name_and_quantity_from_df()
+
+            charge_product_name_and_quantity(
+                tried=1
+            )
+        
+        else:
+            os.system('clear')
+            time.sleep(1)
+
+            print('\nGracias por utilizar Bot de Heladerías Frozen SRL!')
     
 
 # Ejercicio 1:
@@ -147,8 +201,8 @@ class GeoAPI:
         si la temperatura actual es mayor a 28°C (Method: GET)
 
         Returns:
-            bool: True si la temperatura es mayor a 28°C,
-            bool: False si la temperatura es menor
+        bool: True si la temperatura es mayor a 28°C,
+        bool: False si la temperatura es menor a 28°C
         """
         
         url = f'https://api.openweathermap.org/data/2.5/weather?lat={cls.LAT}&lon={cls.LON}&appid={cls.API_KEY}&units=metric'
@@ -157,20 +211,30 @@ class GeoAPI:
             req = requests.get(url=url)
             
             if req.status_code >= 400:
-                return False
+                return {
+                'results': False,
+                'temperature': None
+            }
             
-            data = req.json()
+            if req.status_code == 200:
+                data = req.json()
 
-            temperature = data['main']['temp']
-
-            result = is_temperature_greater_than_twenty_eight(
-                temperature=temperature
-            )
-            
-            return result
+                temperature = data['main']['temp']
+                
+                result = is_temperature_greater_than_twenty_eight(
+                    temperature=temperature
+                )
+                
+                return {
+                    'results': result,
+                    'temperature': temperature
+                }
             
         except requests.exceptions.RequestException:
-            return False
+            return {
+                'results': False,
+                'temperature': None
+            }
         
 
 # Ejercicio 2.1:
@@ -185,22 +249,31 @@ def get_product_name_and_quantity_from_df():
     """
     Funcion encargada de mostrar el nombre del producto y su cantidad
     """
-    board = PRODUCT_DF[["product_name", "quantity"]]
-    return print("\n", board)
+    board = PRODUCT_DF[["product_name", "quantity"]].rename(columns={"product_name": "Sabores Disponibles", "quantity": "Cantidad"})
+    board = board.to_string(index=False)
 
+    # Separador horizontal
+    separator = "-" * len(board.split("\n")[0])
 
+    # Formato de la tabla
+    format_board = board.replace("\n", f"\n{separator}\n")
+    format_board = f"{separator}\n{format_board}\n{separator}"
+
+    print(format_board)
+
+  
 def is_product_available(
     product_name: str, 
     quantity: int
 ) -> bool:
     """
-    Funcion encargada de: Buscar en un pandas DataFrame y devolver True si existe stock, False caso
+    Funcion encargada de buscar en un pandas DataFrame y devolver True si existe stock, False caso
     contrario.
 
     :return False `bool`si quantity es menos o igual a 0 o mayor al stock disponible o el stock es 0 o menor:
     :return True `bool`si queantity es mayor a cero, menor o igual al stock disponible y el stock disponible es mayor a cero:
     """
-    search = PRODUCT_DF.loc[PRODUCT_DF["product_name"] == product_name, "quantity"]
+    search = PRODUCT_DF.loc[PRODUCT_DF["product_name"].str.lower() == product_name, "quantity"]
 
     if not search.empty:
         real_quantity = search.iloc[0]
@@ -209,7 +282,7 @@ def is_product_available(
         else:
             return False
     else:
-        print(f"No se encontró el producto {product_name} en el DataFrame.")
+        print(f"\nNo se encontró el sabor: {product_name}")
 
 
 # Ejercicio 3:
@@ -252,10 +325,9 @@ def start():
     """
     os.system('clear')
 
-    print("Iniciando Bot.......\n")
-    time.sleep(3.5)
+    time.sleep(1.5)
     
-    print("Buscando temperatura en: pehuajo")
+    print("Buscando temperatura en Pehuajo")
     time.sleep(2)
 
     loading_bar(
@@ -265,17 +337,28 @@ def start():
         clear=True
     )
 
-    if GeoAPI.is_hot_in_pehuajo():
-        print("#" * 18)
-        print("# Bienvenido!! #")
-        print("#" * 18)
+    geoAPI = GeoAPI.is_hot_in_pehuajo()
+
+    if geoAPI['results']:
+        print("-" * 38)
+        print("| Bienvenido a Heladerías Frozen SRL |")
+        print("-" * 38)
+
+        print(f'\nLa temperatura en Pehuajo actual es de {geoAPI["temperature"]}°C')
+
+        print("\nQue degustamos en este caluroso dia?")
 
         charge_product_name_and_quantity()
     
     else:
-        print("#" * 18)
-        print("# Bienvenido!! 2 #")
-        print("#" * 18)
+        print("-" * 38)
+        print("| Bienvenido a Heladerías Frozen SRL |")
+        print("-" * 38)
+
+        if geoAPI["temperature"]:
+            print(f'\nLa temperatura en Pehuajo actual es de {geoAPI["temperature"]}°C')
+
+        print("\nQue degustamos en este templado dia?")
 
         charge_product_name_and_quantity()
 
